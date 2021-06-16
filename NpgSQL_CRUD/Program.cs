@@ -16,31 +16,46 @@ namespace NpgSQL_CRUD
             return new NpgsqlConnection(@"Server=localhost;Port=5432;User Id=postgres;Password=Tn37cr!!83;Database=TestDB;");
         }
 
+        private static string GenerateString()
+        {
+            Random random = new Random();
+            int length = 16;
+            var rString = "";
+            for (var i = 0; i < length; i++)
+            {
+                rString += ((char)(random.Next(1, 26) + 64)).ToString().ToLower();
+            }
+
+            return rString;
+
+        }
+
         private static async Task Main(string[] args)
         {
             Console.WriteLine("Welcome to NpgSQL CRUD Operation Using .Net Core 3.1 with Ado.net ");
 
             #region Student
 
-            Console.WriteLine("Bulk Inserts");
+            //Console.WriteLine("Bulk Inserts");
 
-            var students = new List<Student>();
+            //var students = new List<Student>();
 
-            Console.WriteLine("No of student enrolling...");
-            var noOfStudent = Convert.ToInt32(Console.ReadLine());
+            //Console.WriteLine("No of student enrolling...");
+            //var noOfStudent = Convert.ToInt32(Console.ReadLine());
 
-            for (int i = 0; i < noOfStudent; i++)
-            {
-                string name = $"Student {i}";
-                decimal fees = Convert.ToDecimal(i) * Convert.ToDecimal(5.25) ;
+            //for (int i = 0; i < noOfStudent; i++)
+            //{
+            //    string name = GenerateString();
+            //    decimal fees = Convert.ToDecimal(i) * Convert.ToDecimal(5.25);
+            //    DateTime enrollmentDate = DateTime.UtcNow.Date;
 
-                students.Add(new Student { Name = name, Fees = fees });
-            }
+            //    students.Add(new Student { Name = name, Fees = fees , EnrollmentDate = enrollmentDate });
+            //}            
 
-            PostgreSQLCopyHelper<Student> copyHelper = CreateCopyHelper();
-            
-            BulkInsert_Students(copyHelper, students);
-           
+            //PostgreSQLCopyHelper<Student> copyHelper = CreateCopyHelper();
+
+            //BulkInsert_Students(copyHelper, students);
+
             //TestConnection();
 
             //Console.WriteLine("Insert a Student Record:");
@@ -58,7 +73,7 @@ namespace NpgSQL_CRUD
 
             #region CheckHistory
 
-            //Console.WriteLine("CRUD for Check Hisotry");
+            Console.WriteLine("CRUD for Check Hisotry");
 
             //Console.WriteLine("Get Check History.\n");
             //var list = await GetCheckList();
@@ -68,23 +83,23 @@ namespace NpgSQL_CRUD
             //    Console.Write($"{checkhistory.AssetClass} {checkhistory.AssetName} {checkhistory.AssetType} {checkhistory.ClusterName} {checkhistory.CollectionTimeResult}\n");
             //}
 
-            //var checkHistories = new List<CheckHistory>()
-            //{
-            //    new CheckHistory{AssetClass = "AC1", AssetName ="AN1", AssetType = "AT1", ClusterName = "CN1", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-            //    new CheckHistory{AssetClass = "AC2", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN2", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-            //    new CheckHistory{AssetClass = "Ac3", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN3", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-            //};
+            var checkHistories = new List<CheckHistory>()
+            {
+                new CheckHistory{AssetClass = "AC1", AssetName ="AN1", AssetType = "AT1", ClusterName = "CN1", CollectionTimeResult=true, EndDate=DateTime.UtcNow.Date, StartDate=DateTime.Now},
+                new CheckHistory{AssetClass = "AC2", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN2", CollectionTimeResult=true, EndDate=DateTime.UtcNow.Date, StartDate=DateTime.Now},
+                new CheckHistory{AssetClass = "Ac3", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN3", CollectionTimeResult=true, EndDate=DateTime.UtcNow.Date, StartDate=DateTime.Now},
+            };
 
-            //var hasInserted = await InsertCheckLists(checkHistories);
+            var hasInserted = await InsertCheckLists(checkHistories);
 
-            //if (hasInserted)
-            //{
-            //    Console.WriteLine("check history inserted successfully...");
-            //}
-            //else
-            //{
-            //    Console.WriteLine("Check History Inserted Failed...");
-            //}
+            if (hasInserted)
+            {
+                Console.WriteLine("check history inserted successfully...");
+            }
+            else
+            {
+                Console.WriteLine("Check History Inserted Failed...");
+            }
 
             #endregion
 
@@ -169,7 +184,8 @@ namespace NpgSQL_CRUD
         {
             return new PostgreSQLCopyHelper<Student>("public", "students")
                 .Map("Name", x => x.Name)
-                .Map("Fees", x => x.Fees);
+                .Map("Fees", x => x.Fees)
+                .MapDate("EnrollmentDate", x => x.EnrollmentDate);
         }
 
         private static void BulkInsert_Students(PostgreSQLCopyHelper<Student> copyHelper, IEnumerable<Student> entities)
@@ -211,23 +227,14 @@ namespace NpgSQL_CRUD
                 await conn.OpenAsync();
 
                 await using (var cmd = new NpgsqlCommand($@" SELECT
-
                                                             asset_name,
-
                                                             cluster_name,
-
                                                             asset_type,
-
                                                             asset_class,
-
                                                             start_date,
-
                                                             end_date,
-
                                                             collection_time_result
-
                                                         FROM
-
                                                             {_tblCheckHistoryName}; ", conn))
 
                 {
@@ -364,8 +371,8 @@ namespace NpgSQL_CRUD
                                                                         @cluster_name,
                                                                         @asset_type,
                                                                         @asset_class,
-                                                                        now()::date,
-                                                                        now()::date,
+                                                                        @start_date,
+                                                                        @end_date,
                                                                         @collection_time_result
                                                                 )
                                                                ON CONFLICT ON CONSTRAINT {_tblCheckHistoryName}_pkey DO UPDATE
@@ -378,15 +385,12 @@ namespace NpgSQL_CRUD
                                                                    end_date = @end_date,
                                                                    collection_time_result = @collection_time_result; ", conn);
 
-                var startDate =new DateTime(2021,06,16); //now()::date;
-                var endDate = new DateTime(2021, 06, 16);
-
-                    cmd.Parameters.AddWithValue("asset_name", checkHistory.AssetName);
+                cmd.Parameters.AddWithValue("asset_name", checkHistory.AssetName);
                 cmd.Parameters.AddWithValue("cluster_name", checkHistory.ClusterName);
                 cmd.Parameters.AddWithValue("asset_type", checkHistory.AssetType);
                 cmd.Parameters.AddWithValue("asset_class", checkHistory.AssetClass);
-                //cmd.Parameters.AddWithValue("start_date", "2021-06-16");
-                //cmd.Parameters.AddWithValue("end_date", "2021-06-16");
+                cmd.Parameters.AddWithValue("start_date", checkHistory.StartDate);
+                cmd.Parameters.AddWithValue("end_date", checkHistory.EndDate);
                 cmd.Parameters.AddWithValue("collection_time_result", checkHistory.CollectionTimeResult);
 
                 Console.WriteLine($"Inserting alert rule: " + Environment.NewLine +
