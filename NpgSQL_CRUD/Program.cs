@@ -10,69 +10,27 @@ namespace NpgSQL_CRUD
     {
         private const string _tblCheckHistoryName = "check_history";
         private const string _tblDayWiseAvailabilityName = "daywaise_availability";
-
-        private static NpgsqlConnection GetConnection()
-        {
-            return new NpgsqlConnection(@"Server=localhost;Port=5432;User Id=postgres;Password=Tn37cr!!83;Database=TestDB;");
-        }
-
-        private static string GenerateString()
-        {
-            Random random = new Random();
-            int length = 16;
-            var rString = "";
-            for (var i = 0; i < length; i++)
-            {
-                rString += ((char)(random.Next(1, 26) + 64)).ToString().ToLower();
-            }
-
-            return rString;
-
-        }
-
         private static async Task Main(string[] args)
         {
             Console.WriteLine("Welcome to NpgSQL CRUD Operation Using .Net Core 3.1 with Ado.net ");
 
             #region Student
 
-            //Console.WriteLine("Bulk Inserts");
-
-            //var students = new List<Student>();
-
-            //Console.WriteLine("No of student enrolling...");
-            //var noOfStudent = Convert.ToInt32(Console.ReadLine());
-
-            //for (int i = 0; i < noOfStudent; i++)
-            //{
-            //    string name = GenerateString();
-            //    decimal fees = Convert.ToDecimal(i) * Convert.ToDecimal(5.25);
-            //    DateTime enrollmentDate = DateTime.UtcNow.Date;
-
-            //    students.Add(new Student { Name = name, Fees = fees , EnrollmentDate = enrollmentDate });
-            //}            
-
-            //PostgreSQLCopyHelper<Student> copyHelper = CreateCopyHelper();
-
-            //BulkInsert_Students(copyHelper, students);
-
-            //TestConnection();
-
-            //Console.WriteLine("Insert a Student Record:");
-            //Insert_Student();
-
-            //Console.WriteLine("Student List:");
-            //var students = Get_Student();
-
-            //foreach (var student in students)
-            //{
-            //    Console.WriteLine($"Name: {student.Name} Fees: {student.Fees} \n");
-            //}
+            Student();
 
             #endregion Student
 
             #region CheckHistory
 
+            //await CheckHistory();
+
+            #endregion
+
+            Console.ReadKey();
+        }
+
+        private static async Task CheckHistory()
+        {
             Console.WriteLine("CRUD for Check Hisotry");
 
             //Console.WriteLine("Get Check History.\n");
@@ -100,15 +58,47 @@ namespace NpgSQL_CRUD
             {
                 Console.WriteLine("Check History Inserted Failed...");
             }
+        }
 
-            #endregion
+        private static void Student()
+        {
+            Console.WriteLine("Bulk Inserts");
 
-            Console.ReadKey();
+            var students = new List<Student>();
+
+            Console.WriteLine("No of student enrolling...");
+            var noOfStudent = Convert.ToInt32(Console.ReadLine());
+
+            for (int i = 0; i < noOfStudent; i++)
+            {
+                string name = Comman.GenerateString();
+                decimal fees = Convert.ToDecimal(i) * Convert.ToDecimal(5.25);
+                DateTime enrollmentDate = DateTime.UtcNow.Date;
+
+                students.Add(new Student { Name = name, Fees = fees, EnrollmentDate = enrollmentDate });
+            }
+
+            PostgreSQLCopyHelper<Student> copyHelper = Comman.CreateCopyHelper();
+
+            StudentService.BulkInsert_Students(copyHelper, students);
+
+            //TestConnection();
+
+            Console.WriteLine("Insert a Student Record:");
+            StudentService.Insert_Student();
+
+            Console.WriteLine("Student List:");
+            var result = StudentService.Get_Student();
+
+            foreach (var student in result)
+            {
+                Console.WriteLine($"Name: {student.Name} Fees: {student.Fees} \n");
+            }
         }
 
         private static void TestConnection()
         {
-            using (NpgsqlConnection conn = GetConnection())
+            using (NpgsqlConnection conn = Comman.GetConnection())
             {
                 conn.Open();
 
@@ -121,96 +111,6 @@ namespace NpgSQL_CRUD
             }
         }
 
-        #region Students
-
-        private static List<Student> Get_Student()
-        {
-            var students = new List<Student>();
-
-            using (NpgsqlConnection conn = GetConnection())
-            {
-                conn.Open();
-
-                string query = @"Select Name,Fees from public.Students";
-
-                NpgsqlCommand cmd = new NpgsqlCommand(query, conn);
-
-                var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    var student = new Student();
-
-                    student.Name = reader.GetString(0);
-                    student.Fees = reader.GetDecimal(1);
-
-                    students.Add(student);
-                }
-            }
-
-            return students;
-        }
-
-        private static void Insert_Student()
-        {
-            using (NpgsqlConnection Conn = GetConnection())
-            {
-                Console.WriteLine("Enter a name:");
-                var name = Console.ReadLine();
-
-                Console.WriteLine("\n Enter a fees amount:");
-                var fees = Convert.ToDecimal(Console.ReadLine());
-
-                string query = $@"INSERT INTO Public.Students(Name,Fees) VALUES
-                                        (@name,@fees)";
-
-                NpgsqlCommand cmd = new NpgsqlCommand(query, Conn);
-
-                cmd.Parameters.AddWithValue("name", name);
-                cmd.Parameters.AddWithValue("fees", fees);
-
-                Conn.Open();
-
-                int n = cmd.ExecuteNonQuery();
-
-                if (n == 1)
-                {
-                    Console.WriteLine("Student Inserted Successfully");
-                }
-            }
-        }
-
-        private static PostgreSQLCopyHelper<Student> CreateCopyHelper()
-        {
-            return new PostgreSQLCopyHelper<Student>("public", "students")
-                .Map("Name", x => x.Name)
-                .Map("Fees", x => x.Fees)
-                .MapDate("EnrollmentDate", x => x.EnrollmentDate);
-        }
-
-        private static void BulkInsert_Students(PostgreSQLCopyHelper<Student> copyHelper, IEnumerable<Student> entities)
-        {
-            try
-            {
-                using (var connection = GetConnection())
-                {
-                    connection.Open();
-
-                    copyHelper.SaveAll(connection, entities);
-
-                    Console.WriteLine("Successfully Inserted");
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error {ex}");
-            }
-
-        }
-      
-        #endregion Students       
-       
         #region CheckHistory
 
         //ToDo: CreateCheckHistoryTable
@@ -222,7 +122,7 @@ namespace NpgSQL_CRUD
 
             var list = new List<CheckHistory>();
 
-            await using (var conn = GetConnection())
+            await using (var conn = Comman.GetConnection())
             {
                 await conn.OpenAsync();
 
@@ -273,7 +173,7 @@ namespace NpgSQL_CRUD
 
         public async static Task<bool> InsertCheckLists(List<CheckHistory> checkHitories)
         {
-            await using (var conn = GetConnection())
+            await using (var conn = Comman.GetConnection())
             {
                 await conn.OpenAsync();
 
