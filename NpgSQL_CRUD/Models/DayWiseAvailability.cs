@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NpgSQL_CRUD.Models
+namespace NpgSQL_CRUD
 {
     public class DayWiseAvailability
     {

@@ -22,7 +22,13 @@ namespace NpgSQL_CRUD
 
             #region CheckHistory
 
-            await CheckHistory();
+            //await CheckHistory();
+
+            #endregion
+
+            #region DayWiseAvailabilities
+
+            await DayWiseAvailabilities();
 
             #endregion
 
@@ -33,27 +39,47 @@ namespace NpgSQL_CRUD
         {
             Console.WriteLine("CRUD for Check Hisotry");           
 
-            var checkHistories = new List<CheckHistory>()
+            Console.WriteLine("No of Check History Inserting...");
+            var noOfCheckHistory = Convert.ToInt32(Console.ReadLine());
+
+            var checkHistories = new List<CheckHistory>();
+
+            for (int i = 0; i < noOfCheckHistory; i++)
             {
-                new CheckHistory{AssetClass = "AC1", AssetName ="AN1", AssetType = "AT1", ClusterName = "CN1", CollectionTimeResult=true, EndDate=new DateTime(2021,06,16), StartDate=new DateTime(2021,06,16)},
-                new CheckHistory{AssetClass = "AC2", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN2", CollectionTimeResult=true, EndDate=new DateTime(2021,06,16), StartDate=new DateTime(2021,06,16)},
-                new CheckHistory{AssetClass = "Ac3", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN3", CollectionTimeResult=true, EndDate=new DateTime(2021,06,16), StartDate=new DateTime(2021,06,16)},
-            };
+                string assetclass = Comman.GenerateString();
+                string assetname = Comman.GenerateString();
+                string assettype = Comman.GenerateString();
+                string clustername = Comman.GenerateString();                
+
+                checkHistories.Add(new CheckHistory { AssetClass = assetclass, AssetName = assetname, AssetType = assettype, ClusterName = clustername, CollectionTimeResult = true, EndDate = new DateTime(2021, 06, 16), StartDate = new DateTime(2021, 06, 16) });
+            }
+
+            #region Insert
 
             //CheckHistoryService.Insert_CheckHistory();
 
-            var hasInserted = await CheckHistoryService.InsertCheckLists(checkHistories);
+            //var hasInserted = await CheckHistoryService.InsertCheckLists(checkHistories);
 
-            if (hasInserted)
-            {
-                Console.WriteLine("check history inserted successfully...");
-            }
-            else
-            {
-                Console.WriteLine("Check History Inserted Failed...");
-            }
+            //if (hasInserted)
+            //{
+            //    Console.WriteLine("check history inserted successfully...");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Check History Inserted Failed...");
+            //}
+            #endregion
 
+            #region BulkInsert
 
+            PostgreSQLCopyHelper<CheckHistory> copyHelper = Comman.CheckHistoryMapper();
+
+            CheckHistoryService.BulkInsert_CheckHistorys(copyHelper, checkHistories);
+
+            #endregion
+
+            #region GetList
+          
             Console.WriteLine("Get Check History.\n");
             var list = await CheckHistoryService.GetCheckList();
 
@@ -67,7 +93,7 @@ namespace NpgSQL_CRUD
 
             Console.WriteLine("..................................................................................................................");
 
-           
+            #endregion
         }
 
         private static void Student()
@@ -120,6 +146,66 @@ namespace NpgSQL_CRUD
                 conn.Close();
             }
         }
-     
+
+        private static async Task DayWiseAvailabilities()
+        {
+            Console.WriteLine("CRUD for DayWiseAvailabilities");
+
+            Console.WriteLine("No of DayWise Availabilities Inserting...");
+            var noOfDayWiseAvailabilities = Convert.ToInt32(Console.ReadLine());
+
+            var dayWiseAvailabilities = new List<DayWiseAvailability>();
+
+            for (int i = 0; i < noOfDayWiseAvailabilities; i++)
+            {
+                string assetclass = Comman.GenerateString();
+                string assetname = Comman.GenerateString();
+                string assettype = Comman.GenerateString();
+                string clustername = Comman.GenerateString();
+                var availabilityPercentage = Convert.ToString(449784 / (i+1));
+
+                dayWiseAvailabilities.Add(new DayWiseAvailability { AssetClass = assetclass, AssetName = assetname, AssetType = assettype, ClusterName = clustername, AvailabilityPercentage = availabilityPercentage, CollectionDate = new DateTime(2021, 06, 16)});
+            }
+
+            #region Insert            
+
+            //var hasInserted = await DayWiseAvailabilityService.InsertOrUpdateDayWiseAvailabilities(dayWiseAvailabilities);
+
+            //if (hasInserted)
+            //{
+            //    Console.WriteLine("Inserted successfully...");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Inserted Failed...");
+            //}
+            #endregion
+
+            #region BulkInsert
+
+            PostgreSQLCopyHelper<DayWiseAvailability> copyHelper = Comman.DayWiseAvailabilityMapper();
+
+            DayWiseAvailabilityService.BulkInsert_DayWiseAvailabilities(copyHelper, dayWiseAvailabilities);
+
+            #endregion
+
+            #region GetList
+
+            Console.WriteLine("Get Check History.\n");
+            var list = await DayWiseAvailabilityService.GetLast30DayWiseAvailability();
+
+            Console.WriteLine($"AssetClass \b\b AssetName \b\b AssetType\b\b ClusterName \b\b CollectionDate \b\b AvailabilityPercentage \n");
+            Console.WriteLine("..................................................................................................................");
+
+            foreach (var dayWiseAvailability in list)
+            {
+                Console.Write($"{dayWiseAvailability.AssetClass}\b\b{dayWiseAvailability.AssetName} {dayWiseAvailability.AssetType} {dayWiseAvailability.ClusterName} {dayWiseAvailability.CollectionDate} {dayWiseAvailability.AvailabilityPercentage}\n");
+            }
+
+            Console.WriteLine("..................................................................................................................");
+
+            #endregion
+        }
+
     }
 }

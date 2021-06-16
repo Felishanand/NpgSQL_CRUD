@@ -34,5 +34,28 @@ namespace NpgSQL_CRUD
                 .Map("Fees", x => x.Fees)
                 .MapDate("EnrollmentDate", x => x.EnrollmentDate);
         }
+
+        public static PostgreSQLCopyHelper<CheckHistory> CheckHistoryMapper()
+        {            
+            return new PostgreSQLCopyHelper<CheckHistory>("public", "check_history")
+                .Map("asset_class", x => x.AssetClass)
+                .Map("asset_name", x => x.AssetName)
+                .Map("asset_type", x => x.AssetType)
+                .Map("cluster_name", x => x.ClusterName)
+                .Map("collection_time_result", x => x.CollectionTimeResult)
+                .MapDate("end_date", x => x.EndDate)
+                .MapDate("start_date", x => x.StartDate);
+        }
+
+        public static PostgreSQLCopyHelper<DayWiseAvailability> DayWiseAvailabilityMapper()
+        {
+            return new PostgreSQLCopyHelper<DayWiseAvailability>("public", "daywaise_availability")
+                .Map("asset_class", x => x.AssetClass)
+                .Map("asset_name", x => x.AssetName)
+                .Map("asset_type", x => x.AssetType)
+                .Map("cluster_name", x => x.ClusterName)
+                .Map("availability_percentage", x => x.AvailabilityPercentage)
+                .MapDate("collection_date", x => x.CollectionDate);                
+        }
     }
 }
