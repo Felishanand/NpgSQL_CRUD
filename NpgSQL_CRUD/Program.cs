@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using PostgreSQLCopyHelper;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -21,6 +22,25 @@ namespace NpgSQL_CRUD
 
             #region Student
 
+            Console.WriteLine("Bulk Inserts");
+
+            var students = new List<Student>();
+
+            Console.WriteLine("No of student enrolling...");
+            var noOfStudent = Convert.ToInt32(Console.ReadLine());
+
+            for (int i = 0; i < noOfStudent; i++)
+            {
+                string name = $"Student {i}";
+                decimal fees = Convert.ToDecimal(i) * Convert.ToDecimal(5.25) ;
+
+                students.Add(new Student { Name = name, Fees = fees });
+            }
+
+            PostgreSQLCopyHelper<Student> copyHelper = CreateCopyHelper();
+            
+            BulkInsert_Students(copyHelper, students);
+           
             //TestConnection();
 
             //Console.WriteLine("Insert a Student Record:");
@@ -36,7 +56,9 @@ namespace NpgSQL_CRUD
 
             #endregion Student
 
-            Console.WriteLine("CRUD for Check Hisotry");
+            #region CheckHistory
+
+            //Console.WriteLine("CRUD for Check Hisotry");
 
             //Console.WriteLine("Get Check History.\n");
             //var list = await GetCheckList();
@@ -46,26 +68,42 @@ namespace NpgSQL_CRUD
             //    Console.Write($"{checkhistory.AssetClass} {checkhistory.AssetName} {checkhistory.AssetType} {checkhistory.ClusterName} {checkhistory.CollectionTimeResult}\n");
             //}
 
-            var checkHistories = new List<CheckHistory>()
-            {
-                new CheckHistory{AssetClass = "AC1", AssetName ="AN1", AssetType = "AT1", ClusterName = "CN1", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-                new CheckHistory{AssetClass = "AC2", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN2", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-                new CheckHistory{AssetClass = "Ac3", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN3", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
-            };
+            //var checkHistories = new List<CheckHistory>()
+            //{
+            //    new CheckHistory{AssetClass = "AC1", AssetName ="AN1", AssetType = "AT1", ClusterName = "CN1", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
+            //    new CheckHistory{AssetClass = "AC2", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN2", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
+            //    new CheckHistory{AssetClass = "Ac3", AssetName ="AN2", AssetType = "AT2", ClusterName = "CN3", CollectionTimeResult=true, EndDate=DateTime.UtcNow, StartDate=DateTime.Now, Id =Guid.NewGuid()},
+            //};
 
+            //var hasInserted = await InsertCheckLists(checkHistories);
 
-            var hasInserted = await InsertCheckLists(checkHistories);
+            //if (hasInserted)
+            //{
+            //    Console.WriteLine("check history inserted successfully...");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Check History Inserted Failed...");
+            //}
 
-            if (hasInserted)
-            {
-                Console.WriteLine("check history inserted successfully...");
-            }
-            else
-            {
-                Console.WriteLine("Check History Inserted Failed...");
-            }
+            #endregion
 
             Console.ReadKey();
+        }
+
+        private static void TestConnection()
+        {
+            using (NpgsqlConnection conn = GetConnection())
+            {
+                conn.Open();
+
+                if (conn.State == System.Data.ConnectionState.Open)
+                {
+                    Console.WriteLine("Database Connected");
+                }
+
+                conn.Close();
+            }
         }
 
         #region Students
@@ -126,22 +164,37 @@ namespace NpgSQL_CRUD
                 }
             }
         }
-        #endregion Students
 
-        private static void TestConnection()
+        private static PostgreSQLCopyHelper<Student> CreateCopyHelper()
         {
-            using (NpgsqlConnection conn = GetConnection())
-            {
-                conn.Open();
+            return new PostgreSQLCopyHelper<Student>("public", "students")
+                .Map("Name", x => x.Name)
+                .Map("Fees", x => x.Fees);
+        }
 
-                if (conn.State == System.Data.ConnectionState.Open)
+        private static void BulkInsert_Students(PostgreSQLCopyHelper<Student> copyHelper, IEnumerable<Student> entities)
+        {
+            try
+            {
+                using (var connection = GetConnection())
                 {
-                    Console.WriteLine("Database Connected");
+                    connection.Open();
+
+                    copyHelper.SaveAll(connection, entities);
+
+                    Console.WriteLine("Successfully Inserted");
                 }
 
-                conn.Close();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error {ex}");
+            }
+
         }
+      
+        #endregion Students       
+       
         #region CheckHistory
 
         //ToDo: CreateCheckHistoryTable
