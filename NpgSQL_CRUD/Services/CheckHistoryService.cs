@@ -11,8 +11,8 @@ namespace NpgSQL_CRUD
     {
         private const string _tblCheckHistoryName = "check_history";
         private const string _tblDayWiseAvailabilityName = "daywaise_availability";
-        public async static Task<List<CheckHistory>> GetCheckList()
 
+        public async static Task<List<CheckHistory>> GetCheckList()
         {
             Console.WriteLine("Getting check history list");
 
@@ -32,7 +32,6 @@ namespace NpgSQL_CRUD
                                                             collection_time_result
                                                         FROM
                                                             {_tblCheckHistoryName}; ", conn))
-
                 {
                     // read in results
 
@@ -84,7 +83,7 @@ namespace NpgSQL_CRUD
                 var asset_class = Console.ReadLine();
 
                 //Console.WriteLine("\nEnter a StartDate:");
-                var start_date = new DateTime(2021,06,16);
+                var start_date = new DateTime(2021, 06, 16);
 
                 //Console.WriteLine("\nEnter a EndDate:");
                 var end_date = new DateTime(2021, 06, 16);
@@ -130,13 +129,11 @@ namespace NpgSQL_CRUD
 
                     Console.WriteLine("Successfully Inserted");
                 }
-
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error {ex}");
             }
-
         }
 
         public async static Task<bool> InsertCheckLists(List<CheckHistory> checkHitories)
@@ -218,7 +215,7 @@ namespace NpgSQL_CRUD
 
             return true;
         }
-        
+
         private async static Task<NpgsqlCommand> InsertCheckList(NpgsqlConnection conn, CheckHistory checkHistory)
         {
             try
@@ -277,7 +274,107 @@ namespace NpgSQL_CRUD
                 Console.WriteLine(ex.Message);
                 throw;
             }
+        }
 
+        public async static Task<bool> InsertCheckHistories(List<CheckHistory> checkHistories)
+        {
+            await using (var conn = Comman.GetConnection())
+            {
+                await conn.OpenAsync();
+
+                try
+                {
+                    using var cmd = new NpgsqlCommand(connection: conn, cmdText: null);
+
+                    var sb = new StringBuilder($@"INSERT INTO {_tblCheckHistoryName} (
+                                                                     asset_name,
+                                                                     cluster_name,
+                                                                     asset_type,
+                                                                     asset_class,
+                                                                     start_date,
+                                                                     end_date,
+                                                                     collection_time_result)
+                                                               VALUES ");
+
+                    for (var i = 0; i < checkHistories.Count; i++)
+                    {
+                        if (i != 0) sb.Append(',');
+
+                        string asset_name = string.Empty,
+                               cluster_name = string.Empty,
+                               asset_type = string.Empty,
+                               asset_class = string.Empty;
+
+                        DateTime start_date = DateTime.UtcNow,
+                                 end_date = DateTime.UtcNow;
+
+                        bool collection_time_result = false;
+
+                        sb.Append($@"(@asset_name,@cluster_name,@asset_type,@asset_class,@start_date,@end_date,@collection_time_result)
+                        ON CONFLICT ON CONSTRAINT {_tblCheckHistoryName}_pkey DO UPDATE
+                        SET asset_name = @asset_name,
+                            cluster_name = @cluster_name,
+                            asset_type = @asset_type,
+                            asset_class = @asset_class,
+                            start_date = @start_date,
+                            end_date = @end_date,
+                            collection_time_result = @collection_time_result");
+
+                        cmd.Parameters.AddWithValue("asset_name", checkHistories[i].AssetName);
+                        cmd.Parameters.AddWithValue("cluster_name", checkHistories[i].ClusterName);
+                        cmd.Parameters.AddWithValue("asset_type", checkHistories[i].AssetType);
+                        cmd.Parameters.AddWithValue("asset_class", checkHistories[i].AssetClass);
+                        cmd.Parameters.AddWithValue("start_date", checkHistories[i].StartDate);
+                        cmd.Parameters.AddWithValue("end_date", checkHistories[i].EndDate);
+                        cmd.Parameters.AddWithValue("collection_time_result", checkHistories[i].CollectionTimeResult);
+                    }
+
+                    cmd.CommandText = sb.ToString();
+
+                    await cmd.ExecuteNonQueryAsync();
+
+                    Console.WriteLine($"Check List inserted successfully.");
+                }
+                catch (PostgresException ex)
+                {
+                    if (ex.SqlState == "42P01") // table does not exist
+                    {
+                        Console.WriteLine($"Table {_tblCheckHistoryName} does not exists. Attempting to create.");
+
+                        if (!await CreateCheckHistoryTable(conn))
+
+                            throw new Exception("Error while creating table for Check History");
+
+                        Console.WriteLine($"Initialized table {_tblCheckHistoryName}");
+
+                        Console.WriteLine($"Retry inserts into {_tblCheckHistoryName}");
+
+                        await conn.CloseAsync();
+
+                        return await InsertCheckHistories(checkHistories);
+                    }
+                    else // unknown error
+                    {
+                       Console.WriteLine($"Failed to insert check history: \n{ex.Message}");
+
+                        await conn.CloseAsync();
+
+                        throw;
+                    }
+                }
+                catch (Exception ex)
+                {
+                   Console.WriteLine($"Failed to insert check history: \n{ex.Message}");
+
+                    await conn.CloseAsync();
+
+                    throw;
+                }
+
+                await conn.CloseAsync();
+            }
+
+            return true;
         }
     }
 }

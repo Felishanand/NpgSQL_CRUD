@@ -10,6 +10,7 @@ namespace NpgSQL_CRUD
     {
         private const string _tblCheckHistoryName = "check_history";
         private const string _tblDayWiseAvailabilityName = "daywaise_availability";
+
         private static async Task Main(string[] args)
         {
             Console.WriteLine("Welcome to NpgSQL CRUD Operation Using .Net Core 3.1 with Ado.net ");
@@ -22,13 +23,13 @@ namespace NpgSQL_CRUD
 
             #region CheckHistory
 
-            //await CheckHistory();
+            await CheckHistory();
 
             #endregion
 
             #region DayWiseAvailabilities
 
-            await DayWiseAvailabilities();
+            //await DayWiseAvailabilities();
 
             #endregion
 
@@ -56,7 +57,7 @@ namespace NpgSQL_CRUD
 
             #region Insert
 
-            //CheckHistoryService.Insert_CheckHistory();
+           // CheckHistoryService.Insert_CheckHistory();
 
             //var hasInserted = await CheckHistoryService.InsertCheckLists(checkHistories);
 
@@ -72,6 +73,8 @@ namespace NpgSQL_CRUD
 
             #region BulkInsert
 
+            var res = CheckHistoryService.InsertCheckHistories(checkHistories);
+
             PostgreSQLCopyHelper<CheckHistory> copyHelper = Comman.CheckHistoryMapper();
 
             CheckHistoryService.BulkInsert_CheckHistorys(copyHelper, checkHistories);
@@ -79,7 +82,7 @@ namespace NpgSQL_CRUD
             #endregion
 
             #region GetList
-          
+
             Console.WriteLine("Get Check History.\n");
             var list = await CheckHistoryService.GetCheckList();
 
