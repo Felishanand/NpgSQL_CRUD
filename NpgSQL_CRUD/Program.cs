@@ -55,30 +55,15 @@ namespace NpgSQL_CRUD
                 checkHistories.Add(new CheckHistory { AssetClass = assetclass, AssetName = assetname, AssetType = assettype, ClusterName = clustername, CollectionTimeResult = true, EndDate = new DateTime(2021, 06, 16), StartDate = new DateTime(2021, 06, 16) });
             }
 
-            #region Insert
+            #region BulkUpsert
+            var res = await CheckHistoryService.UpsertCheckHistories(checkHistories);
 
-           // CheckHistoryService.Insert_CheckHistory();
+            if (res)
+            {
+                Console.WriteLine("Great done...");
+            }
 
-            //var hasInserted = await CheckHistoryService.InsertCheckLists(checkHistories);
-
-            //if (hasInserted)
-            //{
-            //    Console.WriteLine("check history inserted successfully...");
-            //}
-            //else
-            //{
-            //    Console.WriteLine("Check History Inserted Failed...");
-            //}
-            #endregion
-
-            #region BulkInsert
-
-            var res = CheckHistoryService.InsertCheckHistories(checkHistories);
-
-            PostgreSQLCopyHelper<CheckHistory> copyHelper = Comman.CheckHistoryMapper();
-
-            CheckHistoryService.BulkInsert_CheckHistorys(copyHelper, checkHistories);
-
+           
             #endregion
 
             #region GetList
@@ -97,6 +82,33 @@ namespace NpgSQL_CRUD
             Console.WriteLine("..................................................................................................................");
 
             #endregion
+
+            return;
+
+            #region Insert
+
+            CheckHistoryService.Insert_CheckHistory();
+
+            var hasInserted = await CheckHistoryService.InsertCheckLists(checkHistories);
+
+            if (hasInserted)
+            {
+                Console.WriteLine("check history inserted successfully...");
+            }
+            else
+            {
+                Console.WriteLine("Check History Inserted Failed...");
+            }
+            #endregion
+
+            #region BulkInsert 
+
+            PostgreSQLCopyHelper<CheckHistory> copyHelper = Comman.CheckHistoryMapper();
+
+            CheckHistoryService.BulkInsert_CheckHistorys(copyHelper, checkHistories);
+
+            #endregion
+ 
         }
 
         private static void Student()

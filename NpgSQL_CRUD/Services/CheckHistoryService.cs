@@ -276,7 +276,7 @@ namespace NpgSQL_CRUD
             }
         }
 
-        public async static Task<bool> InsertCheckHistories(List<CheckHistory> checkHistories)
+        public async static Task<bool> UpsertCheckHistories(List<CheckHistory> checkHistories)
         {
             await using (var conn = Comman.GetConnection())
             {
@@ -285,6 +285,8 @@ namespace NpgSQL_CRUD
                 try
                 {
                     using var cmd = new NpgsqlCommand(connection: conn, cmdText: null);
+
+                    
 
                     var sb = new StringBuilder($@"INSERT INTO {_tblCheckHistoryName} (
                                                                      asset_name,
@@ -310,15 +312,15 @@ namespace NpgSQL_CRUD
 
                         bool collection_time_result = false;
 
-                        sb.Append($@"(@asset_name,@cluster_name,@asset_type,@asset_class,@start_date,@end_date,@collection_time_result)
-                        ON CONFLICT ON CONSTRAINT {_tblCheckHistoryName}_pkey DO UPDATE
-                        SET asset_name = @asset_name,
-                            cluster_name = @cluster_name,
-                            asset_type = @asset_type,
-                            asset_class = @asset_class,
-                            start_date = @start_date,
-                            end_date = @end_date,
-                            collection_time_result = @collection_time_result");
+                        //DO UPDATE SET col2 = EXCLUDED.col2;
+
+
+                        sb.Append($@"(@asset_name,@cluster_name,@asset_type,@asset_class,@start_date,@end_date,@collection_time_result)");
+
+                        sb.Append($@"ON CONFLICT ON CONSTRAINT {_tblCheckHistoryName}_pkey
+                                        DO UPDATE 
+                                        SET                                             
+                                            collection_time_result = EXCLUDED.collection_time_result");
 
                         cmd.Parameters.AddWithValue("asset_name", checkHistories[i].AssetName);
                         cmd.Parameters.AddWithValue("cluster_name", checkHistories[i].ClusterName);
@@ -327,13 +329,13 @@ namespace NpgSQL_CRUD
                         cmd.Parameters.AddWithValue("start_date", checkHistories[i].StartDate);
                         cmd.Parameters.AddWithValue("end_date", checkHistories[i].EndDate);
                         cmd.Parameters.AddWithValue("collection_time_result", checkHistories[i].CollectionTimeResult);
-                    }
+                    }                    
 
                     cmd.CommandText = sb.ToString();
 
                     await cmd.ExecuteNonQueryAsync();
 
-                    Console.WriteLine($"Check List inserted successfully.");
+                    Console.WriteLine($"Check List upsert successfully.");
                 }
                 catch (PostgresException ex)
                 {
@@ -351,7 +353,7 @@ namespace NpgSQL_CRUD
 
                         await conn.CloseAsync();
 
-                        return await InsertCheckHistories(checkHistories);
+                        return await UpsertCheckHistories(checkHistories);
                     }
                     else // unknown error
                     {
